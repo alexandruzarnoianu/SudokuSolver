@@ -1,37 +1,53 @@
 package Classes;
 
+import java.util.Random;
 import java.util.Scanner;
 
 public class SudokuSolver {
 
     private static final int GRID_SIZE;
+    private static final int DIF_EASY;
+    private static final int DIF_MEDIUM;
+    private static final int DIF_HARD;
+    private static int[][] solvedBoard;
+
     static {
         GRID_SIZE = 9;
+        DIF_EASY = 41;
+        DIF_MEDIUM = 48;
+        DIF_HARD = 55;
+        solvedBoard = new int[GRID_SIZE][GRID_SIZE];
     }
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        int[][] board = {
-                {0, 0, 8, 0, 0, 0, 0, 0, 0},
-                {7, 6, 0, 2, 1, 0, 0, 0, 8},
-                {0, 2, 0, 0, 3, 7, 0, 0, 0},
-                {0, 4, 0, 5, 0, 0, 0, 0, 6},
-                {3, 0, 6, 0, 0, 0, 8, 0, 9},
-                {2, 0, 0, 0, 0, 3, 0, 4, 0},
-                {0, 0, 0, 1, 6, 0, 0, 2, 0},
-                {5, 0, 0, 0, 9, 2, 0, 1, 7},
-                {0, 0, 0, 0, 0, 0, 9, 0, 0}
-        };
-
+        System.out.println(Print.NEW_GAME);
+        String difficulty = scanner.nextLine();
+        int[][] board;
+        switch (difficulty) {
+            case "1": {
+                board = generateBoard(DIF_EASY);
+                break;
+            }
+            case "2": {
+                board = generateBoard(DIF_MEDIUM);
+                break;
+            }
+            case "3": {
+                board = generateBoard(DIF_HARD);
+                break;
+            }
+            default: {
+                System.out.println(Print.INVALID);
+                board = generateBoard(DIF_EASY);
+            }
+        }
         System.out.println(Print.SOLVE);
         printBoard(board);
         System.out.println(Print.SHOW);
         String showSolution = scanner.nextLine();
-
-        if (solve(board)) {
-            System.out.println(Print.SUCCESS);
-            printBoard(board);
-        } else System.out.println(Print.INVALID);
+        System.out.println(Print.SUCCESS);
+        printBoard(solvedBoard);
     }
 
     private static boolean isNumberInRow(int[][] board, int number, int row) {
@@ -72,7 +88,7 @@ public class SudokuSolver {
     }
 
     private static boolean solve(int[][] board) {
-        for (int row = 0; row < GRID_SIZE; row++){
+        for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
                 if (board[row][col] == 0) {
                     for (int numTry = 1; numTry <= GRID_SIZE; numTry++) {
@@ -104,12 +120,67 @@ public class SudokuSolver {
             }
         }
     }
+
+    private static int[][] generateBoard(int difficulty) {
+        int[][] board = new int[GRID_SIZE][GRID_SIZE];
+        populateBoard(board);
+        solve(board);
+        cacheSolved(board);
+        return makeSolvable(board, difficulty);
+    }
+
+    private static void populateBoard(int[][] board) {
+        Random random = new Random();
+        for (int row = 0; row < GRID_SIZE; row += 4) {
+            for (int col = random.nextInt(3); col < GRID_SIZE; col += 1 + random.nextInt(3)) {
+                int number = 1 + random.nextInt(9);
+                if (board[row][col] == 0 && isPositionValid(board, number, row, col)) {
+                    board[row][col] = number;
+                }
+            }
+        }
+    }
+
+    private static int[][] makeSolvable(int[][] board, int difficulty) {
+        Random rdm = new Random();
+        int maxEmpty = difficulty;
+        int maxPerRow = difficulty / 9 + 1;
+        while (maxEmpty != 0) {
+            for (int row = 0; row < GRID_SIZE; row++) {
+                for (int col = rdm.nextInt(3); col < GRID_SIZE; col += 1 + rdm.nextInt(3)) {
+                    if (board[row][col] != 0) {
+                        board[row][col] = 0;
+                        maxEmpty--;
+                        maxPerRow--;
+                    }
+                    if (maxEmpty == 0 || maxPerRow == 0) {
+                        break;
+                    }
+                }
+                maxPerRow = difficulty / 9 + 1;
+                if (maxEmpty == 0) {
+                    return board;
+                }
+            }
+        }
+        return board;
+    }
+
+    private static void cacheSolved(int[][] board) {
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                solvedBoard[row][col] = board[row][col];
+            }
+        }
+    }
 }
 
 class Print {
     public static final String DIV = "_________________________________";
     public static final String SOLVE = "------- Attempt to solve -------\n";
-    public static final String SUCCESS = "-- Puzzle solved succesfully! --\n";
-    public static final String INVALID = "Invalid puzzle input.";
+    public static final String SUCCESS = "-- Puzzle solved successfully! --\n";
+    public static final String INVALID = "Invalid input. Let's start you on Easy.";
     public static final String SHOW = "\n--> Press the Enter key to show the solution.\n";
+    public static final String NEW_GAME = "Hello and welcome to this Sudoku game. To start please chose the " +
+            "difficulty:\n\n\t1 - Easy\n\t2 - Medium\n\t3 - Hard\n*Type No. + Enter (i.e. 1 (Enter))*";
 }
